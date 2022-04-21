@@ -24,9 +24,11 @@ class Seq2SeqToD(pl.LightningModule):
         elif "gpt2" in args.model_checkpoint:
             if(args.CL == "ADAPTER"):
                 model = GPT2Adapter.from_pretrained(args.model_checkpoint)
+                # model = GPT2Adapter.from_pretrained(args.model_checkpoint, cache_dir='/home/travisxu/mnt_file/ToDCL/download')
                 model.add_adapters(bottleneck_size=args.bottleneck_size,adapter_num=args.number_of_adpt)
             else:
                 model = GPT2LMHeadModel.from_pretrained(args.model_checkpoint)
+            torch.set_printoptions(profile="full")
             tokenizer = GPT2Tokenizer.from_pretrained(args.model_checkpoint, bos_token="[bos]", eos_token="[eos]", sos_token="[SOS]", sep_token="[sep]",pad_token='[PAD]')
             model.resize_token_embeddings(new_num_tokens=len(tokenizer))
 

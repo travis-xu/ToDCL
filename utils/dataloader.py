@@ -309,6 +309,7 @@ def get_data_loaders(args, tokenizer, test=False):
     test_datasets = sum(temp_list,[])
     test_loaders = DataLoader(DatasetTrain(sum(temp_list,[])), batch_size=args.valid_batch_size, shuffle=False,collate_fn=partial(collate_fn_, tokenizer=tokenizer))
 
+    '''
     ### THIS IS JUST FOR CHECKING DUPLICATE DIALOGUES
     testing_dict = defaultdict(list)
     for idx_b, batch in tqdm(enumerate(test_loaders),total=len(test_loaders)):
@@ -317,5 +318,6 @@ def get_data_loaders(args, tokenizer, test=False):
                 testing_dict[f'{d_id}_{t_id}_{ta_id}'].append(1)
             else:
                 print(f'{d_id}_{t_id}_{ta_id}')
+    '''
 
     return train_loaders, valid_loaders, test_loaders, (train_datasets,val_datasets,test_datasets)

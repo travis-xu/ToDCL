@@ -56,11 +56,11 @@ def fix_turn(turns):
     new_turns = []
     for i_t, t in enumerate(turns):
         if(t['spk']=="API-OUT" and t['utt']!=""):
-            if turns[i_t-1]['utt']=="":
+            if turns[i_t-1]['utt']=="": # 若API-OUT有实体输出，则在相应API处添加请求(如果当前API-OUT中有实体值而前一句API中没有，则将service名称添加给前一句中的'utt'和'service')
                 new_turns[-1]["utt"] = list(turns[i_t]['n_struct'].keys())[0]+"()"
                 new_turns[-1]["service"] = [list(turns[i_t]['n_struct'].keys())[0]]
-
-
+            # else:   # 若前一句API已有实体，则不改变。
+            #     print()
         new_turns.append(turns[i_t])
     return new_turns
 
@@ -78,17 +78,17 @@ def get_data(dialogue,year,develop=False):
             elif("hungry" in d["instruction_id"] or
                 "dinner" in d["instruction_id"] or
                 "lunch" in d["instruction_id"] or
-                "dessert" in d["instruction_id"]):
+                "dessert" in d["instruction_id"]):  # 'dinner-2'
                 serv = f"restaurant"
                 flag = False
             elif("nba" in d["instruction_id"] or
                  "mlb" in d["instruction_id"] or
                  "epl" in  d["instruction_id"] or
                  "mls" in d["instruction_id"] or
-                 "nfl" in d["instruction_id"] ):
+                 "nfl" in d["instruction_id"] ):    # 'mlb-6'
                 serv = f"sport"
                 flag = False
-        if(flag): print(d["instruction_id"])
+        if(flag): print(d["instruction_id"])    # 未找到匹配则print
         ####
 
         dial = {"id":d["conversation_id"].strip(), "services": [f"TM{year}_"+serv], "dataset":f"TM{year}"}
@@ -108,10 +108,10 @@ def get_data(dialogue,year,develop=False):
                     turns.append({"dataset":f"TM{year}","id":d["conversation_id"].strip(),"turn_id":t_idx,"spk":"API","utt":"","struct":t["segments"] if "segments" in t else "","service":[]})
             else:
                 if(len(turns)!=0 and turns[-1]['spk']=="SYSTEM"):
-                    turns[-1]["utt"] += " "+t["text"]
-                    if "segments" in t and type(turns[-2]["struct"])==list:
+                    turns[-1]["utt"] += " "+t["text"]   # 如果SYSTEM重复说话，则与前一句话合并(t_idx=3)
+                    if "segments" in t and type(turns[-2]["struct"])==list: # 如果SYSTEM重复说话，且该句包含segment信息而上一句也包含，则将segment信息拼接到前一句的struct后
                         turns[-2]["struct"] += t["segments"]
-                    elif("segments" in t and type(turns[-2]["struct"])==str):
+                    elif("segments" in t and type(turns[-2]["struct"])==str):   # 如果SYSTEM重复说话，且该句包含segment信息而上一句不包含，则将segment信息添加到前一句的struct中
                         turns[-2]["struct"] = t["segments"]
                     else:
                         turns[-2]["struct"] = ""
@@ -133,6 +133,8 @@ def preprocessTM2019(develop=False):
     for dial in data:
         if(len(dial["services"])==1):
             data_by_domain[str(sorted(dial["services"]))].append(dial)
+        else:
+            print()
 
     data_by_domain_new = defaultdict(list)
     for dom, data in data_by_domain.items():
@@ -159,7 +161,10 @@ def preprocessTM2019(develop=False):
 def rename_service_dialogue(dial_split,name):
     new_dial = []
     for dial in dial_split:
-        dial["services"] = eval(name)
+        dial["services"] = eval(name)   # str转list: '[\'TMA_movie\']'->['TMA_movie']
+        # if name != eval(name):
+            # a = eval(name)
+            # print(a, name)
         new_dial.append(dial)
     return new_dial
 
@@ -173,6 +178,8 @@ def preprocessTM2020(develop=False):
     for dial in data:
         if(len(dial["services"])==1):
             data_by_domain[str(sorted(dial["services"]))].append(dial)
+        else:
+            print()
 
     data_by_domain_new = defaultdict(list)
     for dom, data in data_by_domain.items():

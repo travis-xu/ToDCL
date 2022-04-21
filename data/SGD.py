@@ -67,7 +67,7 @@ def preprocessSGD_(split, develop=False):
                         group_by_act = defaultdict(list)
                         for a in t["frames"][0]["actions"]:
                             serv.append(t["frames"][0]["service"])
-                            if(a["act"] in allowed_ACT_list):
+                            if(a["act"] in allowed_ACT_list):   # 只使用属于allowed_ACT_list的act
                                 group_by_act[a["act"]].append([a["slot"],a["values"]])
                         str_ACT = ''
                         serv = []
@@ -106,6 +106,8 @@ def preprocessSGD(develop=False):
     for dial in data:
         if(len(dial["services"])==1):
             data_by_domain[str(sorted(dial["services"]))].append(dial)
+        # else:
+        #     print()
 
     data_by_domain_new = defaultdict(list)
     for dom, data in data_by_domain.items():

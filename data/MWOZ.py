@@ -39,7 +39,7 @@ def preprocessMWOZ(develop=False):
         turns =[]
         dst_prev = {}
         for t_idx, t in enumerate(d['log']):
-            if(t_idx % 2 ==0):
+            if(t_idx % 2 ==0):  # USER?
                 turns.append({"dataset":"MWOZ","id":d_idx,"turn_id":t_idx,"spk":"USER","utt":t["text"]})
                 # print("USER",t["text"])
                 str_API_ACT = ""
@@ -59,7 +59,7 @@ def preprocessMWOZ(develop=False):
                                 str_API_ACT = str_API_ACT[:-1]
                             str_API_ACT += ") "
                 # print("API", str_API)
-            else:
+            else:   # SYSTEM
                 dst_api = get_value_dst(t["metadata"])
                 str_API = ""
                 intents = set()
@@ -102,6 +102,8 @@ def preprocessMWOZ(develop=False):
                 turns.append({"dataset":"MWOZ","id":d_idx,"turn_id":t_idx,"spk":"API-OUT","utt":str_ACT,"service":None})
                 turns.append({"dataset":"MWOZ","id":d_idx,"turn_id":t_idx,"spk":"SYSTEM","utt":t["text"]})
         dial["dialogue"] = turns
+
+        # if (len(dial["services"]) == 1):    # travis: filter data of multiple domains
         data.append(dial)
         if(develop and i_d==10): break
 
@@ -109,6 +111,11 @@ def preprocessMWOZ(develop=False):
     split_id_dev, split_id_test = loadCSV("val"), loadCSV("test")
 
     train_data, dev_data, test_data = [], [], []
+
+    # travis: filter data of multiple domains
+    for dial in data[:]:    # 迭代删除时要写成data[:]
+        if (len(dial["services"]) != 1):
+            data.remove(dial)
 
     for dial in data:
         if dial["id"] in split_id_dev:

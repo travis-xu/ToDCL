@@ -8,7 +8,13 @@ import re
 from tabulate import tabulate
 from termcolor import colored
 from collections import defaultdict
-
+import os
+import glob
+import json
+import torch
+import time
+# import pickle
+import dill as pickle
 
 def get_domains_slots(data):
     services = set()
@@ -26,9 +32,9 @@ def get_domains_slots(data):
                         print(turn)
                         input()
                     intent.add(s)
-    print("Domain",len(services))
-    print("Intent",len(intent))
-    print("Avg. Turns",np.mean(len_dialogue))
+    print("Domain:",len(services),"\t","Intent:",len(intent),"\t","Avg. Turns:",np.mean(len_dialogue))
+    # print()
+    # print()
     return len(services), len(intent), np.mean(len_dialogue), intent
 
 def filter_services(data,serv):
@@ -51,6 +57,8 @@ def split_by_domain(data,setting):
         for dial in data:
             if(len(dial["services"])==1):
                 data_by_domain[str(sorted(dial["services"]))].append(dial)
+            # else:
+            #     print()
         print("SINGLE DOMAIN:",len(data_by_domain.keys()))
 
     elif setting=="multi":
@@ -75,7 +83,33 @@ def print_sample(data,num):
             print(colored(f'{turn["spk"]}:',color_map[turn["spk"]])+f' {turn["utt"]}')
         if i_d == num: break
 
-def get_datasets(dataset_list=['SGD'],setting="single",verbose=False,develop=False):
+def save_dataset(saved_data_path, data):
+    # dir_path = os.path.dirname(os.path.abspath(__file__))
+    for type_id, datatype in enumerate(["train", "dev", "test"]):
+        with open(saved_data_path + datatype + ".pk", 'wb') as file_obj:
+            # t0 = time.time()
+            pickle.dump(data[type_id], file_obj)
+            # print('pk saving time %.2fs' % (time.time() - t0))
+            print(saved_data_path + datatype + ".pk" + " saved!")
+
+
+def load_dataset(load_files):
+    data = []
+
+    for datatype in ["train", "dev", "test"]:
+        for load_file in load_files:
+            if datatype in load_file:
+                with open(load_file, 'rb') as file_obj:
+                    data.append(pickle.load(file_obj))
+                    print(load_file + " loaded!")
+
+    return data[0], data[1], data[2]
+
+    # if os.path.exists('load_data_path/EPOCH{}'.format(path)):
+    # for load_file in load_files:
+    #     json.load()
+
+def get_datasets(dataset_list=['SGD'],setting="single",verbose=False,develop=False,data_path="data/preprocessed"):
 
     table = []
     train = []
@@ -83,48 +117,80 @@ def get_datasets(dataset_list=['SGD'],setting="single",verbose=False,develop=Fal
     test = []
     if("TM19" in dataset_list):
         print("LOAD TM19")
-        train_TM19, dev_TM19, test_TM19 = preprocessTM2019(develop=develop)
-        if(verbose):
-            print_sample(train_TM19,2)
-            input()
-        n_domain, n_intent, n_turns, _ = get_domains_slots(train_TM19)
-        table.append({"Name":"TM19","Trn":len(train_TM19),"Val":len(dev_TM19),"Tst":len(test_TM19),"Dom":n_domain,"Int":n_intent,"Tur":n_turns})
+        dataset_path = os.path.join(data_path, "TM19_")
+        load_files = glob.glob(dataset_path + "*")
+        if len(load_files) == 3:
+            train_TM19, dev_TM19, test_TM19 = load_dataset(load_files)
+        else:
+            train_TM19, dev_TM19, test_TM19 = preprocessTM2019(develop=develop)
+            save_dataset(dataset_path, [train_TM19, dev_TM19, test_TM19])
+
+            if(verbose):
+                print_sample(train_TM19,2)
+                input()
+            n_domain, n_intent, n_turns, _ = get_domains_slots(train_TM19)
+            table.append({"Name":"TM19","Trn":len(train_TM19),"Val":len(dev_TM19),"Tst":len(test_TM19),"Dom":n_domain,"Int":n_intent,"Tur":n_turns})
+
         train += train_TM19
         dev += dev_TM19
         test += test_TM19
 
     if("TM20" in dataset_list):
         print("LOAD TM20")
-        train_TM20, dev_TM20, test_TM20 = preprocessTM2020(develop=develop)
-        if(verbose):
-            print_sample(train_TM20,2)
-            input()
-        n_domain, n_intent, n_turns, _ = get_domains_slots(train_TM20)
-        table.append({"Name":"TM20","Trn":len(train_TM20),"Val":len(dev_TM20),"Tst":len(test_TM20),"Dom":n_domain,"Int":n_intent,"Tur":n_turns})
+        dataset_path = os.path.join(data_path, "TM20_")
+        load_files = glob.glob(dataset_path + "*")
+        if len(load_files) == 3:
+            train_TM20, dev_TM20, test_TM20 = load_dataset(load_files)
+        else:
+            train_TM20, dev_TM20, test_TM20 = preprocessTM2020(develop=develop)
+            save_dataset(dataset_path, [train_TM20, dev_TM20, test_TM20])
+
+            if(verbose):
+                print_sample(train_TM20,2)
+                input()
+            n_domain, n_intent, n_turns, _ = get_domains_slots(train_TM20)
+            table.append({"Name":"TM20","Trn":len(train_TM20),"Val":len(dev_TM20),"Tst":len(test_TM20),"Dom":n_domain,"Int":n_intent,"Tur":n_turns})
+
         train += train_TM20
         dev += dev_TM20
         test += test_TM20
 
     if("MWOZ" in dataset_list):
         print("LOAD MWOZ")
-        train_MWOZ, dev_MWOZ,test_MWOZ = preprocessMWOZ(develop=develop)
-        if(verbose):
-            print_sample(train_MWOZ,2)
-            input()
-        n_domain, n_intent, n_turns, _ = get_domains_slots(train_MWOZ)
-        table.append({"Name":"MWOZ","Trn":len(train_MWOZ),"Val":len(dev_MWOZ),"Tst":len(test_MWOZ),"Dom":n_domain,"Int":n_intent,"Tur":n_turns})
+        dataset_path = os.path.join(data_path, "MWOZ_")
+        load_files = glob.glob(dataset_path + "*")
+        if len(load_files) == 3:
+            train_MWOZ, dev_MWOZ, test_MWOZ = load_dataset(load_files)
+        else:
+            train_MWOZ, dev_MWOZ, test_MWOZ = preprocessMWOZ(develop=develop)
+            save_dataset(dataset_path, [train_MWOZ, dev_MWOZ, test_MWOZ])
+
+            if(verbose):
+                print_sample(train_MWOZ,2)
+                input()
+            n_domain, n_intent, n_turns, _ = get_domains_slots(train_MWOZ)
+            table.append({"Name":"MWOZ","Trn":len(train_MWOZ),"Val":len(dev_MWOZ),"Tst":len(test_MWOZ),"Dom":n_domain,"Int":n_intent,"Tur":n_turns})
+
         train += train_MWOZ
         dev += dev_MWOZ
         test += test_MWOZ
 
     if("SGD" in dataset_list):
         print("LOAD SGD")
-        train_SGD, dev_SGD, test_SGD = preprocessSGD(develop=develop)
-        if(verbose):
-            print_sample(train_SGD,2)
-            input()
-        n_domain, n_intent, n_turns, _ = get_domains_slots(train_SGD)
-        table.append({"Name":"SGD","Trn":len(train_SGD),"Val":len(dev_SGD),"Tst":len(test_SGD),"Dom":n_domain,"Int":n_intent,"Tur":n_turns})
+        dataset_path = os.path.join(data_path, "SGD")
+        load_files = glob.glob(dataset_path + "*")
+        if len(load_files) == 3:
+            train_SGD, dev_SGD, test_SGD = load_dataset(load_files)
+        else:
+            train_SGD, dev_SGD, test_SGD = preprocessSGD(develop=develop)
+            save_dataset(dataset_path, [train_SGD, dev_SGD, test_SGD])
+
+            if(verbose):
+                print_sample(train_SGD,2)
+                input()
+            n_domain, n_intent, n_turns, _ = get_domains_slots(train_SGD)
+            table.append({"Name":"SGD","Trn":len(train_SGD),"Val":len(dev_SGD),"Tst":len(test_SGD),"Dom":n_domain,"Int":n_intent,"Tur":n_turns})
+
         train += train_SGD
         dev += dev_SGD
         test += test_SGD
@@ -132,10 +198,10 @@ def get_datasets(dataset_list=['SGD'],setting="single",verbose=False,develop=Fal
 
 
     n_domain, n_intent, n_turns, services = get_domains_slots(train)
-    table.append({"Name":"TOT","Trn":len(train),"Val":len(dev),"Tst":len(test),"Dom":n_domain,"Int":n_intent,"Tur":n_turns})
+    # table.append({"Name":"TOT","Trn":len(train),"Val":len(dev),"Tst":len(test),"Dom":n_domain,"Int":n_intent,"Tur":n_turns})
     test = filter_services(test,services) ## Remove dialogue with API not present in the test set
     dev = filter_services(dev,services) ## Remove dialogue with API not present in the test set
-    n_domain, n_intent, n_turns, services = get_domains_slots(train)
+    # n_domain, n_intent, n_turns, services = get_domains_slots(train)
     if(verbose):
         for inten in services:
             print(inten)
